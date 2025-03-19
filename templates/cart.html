@@ -1,0 +1,45 @@
+<!-- templates/cart.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-center my-4">Carrito de Compras</h1>
+{% if carrito %}
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Imagen</th>
+                <th>Producto</th>
+                <th>Precio Unitario</th>
+                <th>Cantidad</th>
+                <th>Total</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in carrito %}
+            <tr>
+                <td><img src="{{ url_for('static', filename=item.imagen) }}" alt="{{ item.marca }} {{ item.modelo }}" width="50"></td>
+                <td>{{ item.marca }} {{ item.modelo }}</td>
+                <td>${{ item.precio }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>${{ item.precio * item.cantidad }}</td>
+                <td>
+                    <a href="{{ url_for('eliminar_del_carrito', id=item.id) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<h3 class="text-end">Total: ${{ total }}</h3>
+<div class="text-end">
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Seguir Comprando</a>
+</div>
+{% else %}
+<p class="text-center">Tu carrito está vacío.</p>
+<div class="text-center">
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Volver a la Tienda</a>
+</div>
+{% endif %}
+{% endblock %}

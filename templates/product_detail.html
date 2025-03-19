@@ -1,0 +1,24 @@
+<!-- templates/product_detail.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <img src="{{ url_for('static', filename=producto.imagen) }}" class="img-fluid rounded" alt="{{ producto.marca }} {{ producto.modelo }}">
+    </div>
+    <div class="col-md-6">
+        <h1>{{ producto.marca }} {{ producto.modelo }}</h1>
+        <p class="lead">{{ producto.descripcion }}</p>
+        <p><strong>Precio:</strong> ${{ producto.precio }}</p>
+        <p><strong>Stock:</strong> {{ producto.stock }}</p>
+        <form action="{{ url_for('agregar_al_carrito', id=producto.id) }}" method="POST">
+            <div class="mb-3">
+                <label for="cantidad" class="form-label">Cantidad:</label>
+                <input type="number" id="cantidad" name="cantidad" class="form-control" value="1" min="1" max="{{ producto.stock }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Agregar al Carrito</button>
+        </form>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary mt-2">Volver</a>
+    </div>
+</div>
+{% endblock %}

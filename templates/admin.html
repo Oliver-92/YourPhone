@@ -1,0 +1,38 @@
+<!-- templates/admin.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Panel de Administración</h1>
+<a href="{{ url_for('admin_logout') }}" class="btn btn-danger mb-3">Cerrar Sesión</a>
+<a href="{{ url_for('agregar_producto') }}" class="btn btn-success mb-3">Agregar Producto</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Imagen</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for producto in productos %}
+        <tr>
+            <td>{{ producto.id }}</td>
+            <td><img src="{{ url_for('static', filename=producto.imagen) }}" alt="{{ producto.marca }} {{ producto.modelo }}" width="50"></td>
+            <td>{{ producto.marca }}</td>
+            <td>{{ producto.modelo }}</td>
+            <td>${{ producto.precio }}</td>
+            <td>{{ producto.stock }}</td>
+            <td>
+                <a href="{{ url_for('editar_producto', id=producto.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                <a href="{{ url_for('eliminar_producto', id=producto.id) }}" class="btn btn-danger btn-sm">Eliminar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

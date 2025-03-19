@@ -1,0 +1,21 @@
+<!-- templates/productos.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-center my-4">Nuestros Productos</h1>
+<div class="row">
+    {% for producto in productos %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top" alt="{{ producto.marca }} {{ producto.modelo }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ producto.marca }} {{ producto.modelo }}</h5>
+                <p class="card-text">{{ producto.descripcion }}</p>
+                <p class="card-text"><strong>Precio:</strong> ${{ producto.precio }}</p>
+                <a href="{{ url_for('producto', id=producto.id) }}" class="btn btn-primary">Ver Detalles</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
