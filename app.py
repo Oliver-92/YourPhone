@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.utils import secure_filename
 import sqlite3
 import os
@@ -166,55 +166,70 @@ def producto(id):
     conn = get_db_connection()
     producto = conn.execute('SELECT * FROM productos WHERE id = ?', (id,)).fetchone()
     conn.close()
-    return render_template('product_detail.html', producto=producto)
+    
+    if producto is None:
+        return jsonify({'error': 'Producto no encontrado'}), 404
+    
+    # Convertir el objeto Row a dict y asegurar que el precio es float
+    producto_dict = dict(producto)
+    producto_dict['precio'] = float(producto_dict['precio'])
+    
+    return jsonify(producto_dict)
 
 # Ruta para agregar un producto al carrito
-@app.route('/agregar_al_carrito/<int:id>', methods=['POST'])
-def agregar_al_carrito(id):
+@app.route('/agregar_al_carrito', methods=['POST'])
+def agregar_al_carrito():
+    if not request.is_json:
+        return jsonify({'error': 'Request must be JSON'}), 400
+    
+    data = request.get_json()
+    id = data.get('id')
+    cantidad = data.get('cantidad', 1)
+
+    conn = get_db_connection()
+    producto = conn.execute('SELECT * FROM productos WHERE id = ?', (id,)).fetchone()
+    conn.close()
+
+    if not producto:
+        return jsonify({'error': 'Producto no encontrado'}), 404
+
     if 'carrito' not in session:
-        session['carrito'] = []  # Inicializar el carrito si no existe
+        session['carrito'] = []
 
-    cantidad = int(request.form['cantidad'])
-
-    # Verificar si el producto ya está en el carrito
+    # Buscar si el producto ya está en el carrito
     for item in session['carrito']:
         if item['id'] == id:
             item['cantidad'] += cantidad
-            break
-    else:
-        # Si el producto no está en el carrito, agregarlo
-        conn = get_db_connection()
-        producto = conn.execute('SELECT * FROM productos WHERE id = ?', (id,)).fetchone()
-        conn.close()
+            session.modified = True
+            return jsonify({'success': True, 'carrito': session['carrito']})
 
-        session['carrito'].append({
-            'id': producto['id'],
-            'marca': producto['marca'],
-            'modelo': producto['modelo'],
-            'precio': producto['precio'],
-            'cantidad': cantidad,
-            'imagen': producto['imagen']
-        })
-
-    session.modified = True  # Indicar que la sesión ha sido modificada
-    flash('Producto agregado al carrito', 'success')
-    return redirect(url_for('index'))
+    # Si no existe, agregarlo
+    session['carrito'].append({
+        'id': producto['id'],
+        'marca': producto['marca'],
+        'modelo': producto['modelo'],
+        'precio': float(producto['precio']),
+        'imagen': producto['imagen'],
+        'cantidad': cantidad
+    })
+    session.modified = True
+    
+    return jsonify({'success': True, 'carrito': session['carrito']})
 
 # Ruta para ver el carrito
-@app.route('/cart')
+@app.route('/cart', methods=['GET'])
 def cart():
     carrito = session.get('carrito', [])
     total = sum(item['precio'] * item['cantidad'] for item in carrito)
     return render_template('cart.html', carrito=carrito, total=total)
 
 # Ruta para eliminar un producto del carrito
-@app.route('/eliminar_del_carrito/<int:id>')
+@app.route('/eliminar_del_carrito/<int:id>', methods=['POST'])
 def eliminar_del_carrito(id):
     if 'carrito' in session:
         session['carrito'] = [item for item in session['carrito'] if item['id'] != id]
         session.modified = True
-        flash('Producto eliminado del carrito', 'success')
-    return redirect(url_for('cart'))
+    return jsonify({'success': True})
 
 # Ruta para la página de contacto
 @app.route('/contacto')

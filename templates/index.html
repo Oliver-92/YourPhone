@@ -2,20 +2,103 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1 class="text-center my-4">Bienvenido a YourPhone</h1>
-<div class="row">
-    {% for producto in productos %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top" alt="{{ producto.marca }} {{ producto.modelo }}">
-            <div class="card-body">
-                <h5 class="card-title">{{ producto.marca }} {{ producto.modelo }}</h5>
-                <p class="card-text">{{ producto.descripcion }}</p>
-                <p class="card-text"><strong>Precio:</strong> ${{ producto.precio }}</p>
-                <a href="{{ url_for('producto', id=producto.id) }}" class="btn btn-primary">Ver Detalles</a>
+<!-- Banner/Hero Section -->
+<section id="inicio" class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4">Tu tienda de celulares</h1>
+    </div>
+</section>
+
+<!-- Productos Section -->
+<section id="productos" class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-4">Nuestros Productos</h2>
+        <!-- Filtros y ordenamiento -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <select id="filtro-marca" class="form-select">
+                    <option value="todas">Todas las marcas</option>
+                    <option value="Samsung">Samsung</option>
+                    <option value="Apple">Apple</option>
+                    <!-- Agrega más marcas según necesites -->
+                </select>
+            </div>
+            <div class="col-md-6">
+                <select id="orden-precio" class="form-select">
+                    <option value="asc">Precio: Menor a Mayor</option>
+                    <option value="desc">Precio: Mayor a Menor</option>
+                </select>
+            </div>
+        </div>
+        <!-- Lista de productos -->
+        <div class="row" id="lista-productos">
+            {% for producto in productos %}
+            <div class="col-md-4 mb-4 producto" data-marca="{{ producto.marca }}" data-precio="{{ producto.precio }}">
+                <div class="card h-100">
+                    <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top" alt="{{ producto.marca }} {{ producto.modelo }}" data-bs-toggle="modal" data-bs-target="#modalProducto" onclick="cargarProducto({{ producto.id }})">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ producto.marca }} {{ producto.modelo }}</h5>
+                        <p class="card-text">${{ producto.precio }}</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProducto" onclick="cargarProducto({{ producto.id }})">Ver Detalles</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Contacto Section -->
+<section id="contacto" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-4">Contacto</h2>
+        <!-- Formulario de contacto -->
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form id="form-contacto">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" placeholder="Nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="email" class="form-control" placeholder="Email" required>
+                    </div>
+                    <div class="mb-3">
+                        <textarea class="form-control" rows="5" placeholder="Mensaje" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enviar</button>
+                </form>
             </div>
         </div>
     </div>
-    {% endfor %}
+</section>
+
+<!-- Modal Producto -->
+<div class="modal fade" id="modalProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalProductoTitulo"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <img id="modalProductoImagen" src="" class="img-fluid" alt="">
+                    </div>
+                    <div class="col-md-6">
+                        <p id="modalProductoDescripcion"></p>
+                        <p id="modalProductoPrecio"></p>
+                        <p id="modalProductoStock"></p>
+                        <div class="input-group mb-3">
+                            <input type="number" id="cantidadProducto" class="form-control" value="1" min="1">
+                            <button class="btn btn-primary" onclick="agregarAlCarrito()">Agregar al Carrito</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 {% endblock %}

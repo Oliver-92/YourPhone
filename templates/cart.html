@@ -25,7 +25,9 @@
                 <td>{{ item.cantidad }}</td>
                 <td>${{ item.precio * item.cantidad }}</td>
                 <td>
-                    <a href="{{ url_for('eliminar_del_carrito', id=item.id) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                    <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito({{ item.id }})">
+                        Eliminar
+                    </button>
                 </td>
             </tr>
             {% endfor %}

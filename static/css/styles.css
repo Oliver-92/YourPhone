@@ -5,18 +5,43 @@ body {
 
 .navbar {
     background-color: #007bff !important;
+    transition: all 0.3s;
 }
 
 .navbar-brand, .nav-link {
     color: #fff !important;
 }
 
+.navbar.scrolled {
+    background-color: #007bff !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Hero Section */
+.hero-section {
+    background: url('../img/banner.jpg') no-repeat center center;
+    background-size: cover;
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Efecto hover para productos */
 .card {
-    transition: transform 0.2s;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .card:hover {
-    transform: scale(1.05);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Secciones */
+section {
+    padding: 80px 0;
 }
 
 .footer {
