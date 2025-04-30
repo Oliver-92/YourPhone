@@ -19,8 +19,9 @@
                 <select id="filtro-marca" class="form-select">
                     <option value="todas">Todas las marcas</option>
                     <option value="Samsung">Samsung</option>
-                    <option value="Apple">Apple</option>
-                    <!-- Agrega más marcas según necesites -->
+                    <option value="Motorola">Motorola</option>
+                    <option value="Xiomi">Xiomi</option>
+                    <option value="ZTE">ZTE</option>
                 </select>
             </div>
             <div class="col-md-6">
@@ -35,11 +36,14 @@
             {% for producto in productos %}
             <div class="col-md-4 mb-4 producto" data-marca="{{ producto.marca }}" data-precio="{{ producto.precio }}">
                 <div class="card h-100">
-                    <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top" alt="{{ producto.marca }} {{ producto.modelo }}" data-bs-toggle="modal" data-bs-target="#modalProducto" onclick="cargarProducto({{ producto.id }})">
+                    <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top"
+                        alt="{{ producto.marca }} {{ producto.modelo }}" data-bs-toggle="modal"
+                        data-bs-target="#modalProducto" onclick="cargarProducto({{ producto.id }})">
                     <div class="card-body">
                         <h5 class="card-title">{{ producto.marca }} {{ producto.modelo }}</h5>
                         <p class="card-text">${{ producto.precio }}</p>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProducto" onclick="cargarProducto({{ producto.id }})">Ver Detalles</button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProducto"
+                            onclick="cargarProducto({{ producto.id }})">Ver Detalles</button>
                     </div>
                 </div>
             </div>
@@ -90,11 +94,36 @@
                         <p id="modalProductoPrecio"></p>
                         <p id="modalProductoStock"></p>
                         <div class="input-group mb-3">
-                            <input type="number" id="cantidadProducto" class="form-control" value="1" min="1">
+                            <input type="number" id="cantidadProducto" class="form-control" value="1" min="1"
+                                oninput="validarCantidad(this)">
                             <button class="btn btn-primary" onclick="agregarAlCarrito()">Agregar al Carrito</button>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Carrito -->
+<div class="modal fade" id="modalCarrito" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Carrito de Compras</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="items-carrito">
+                    <!-- Los items se cargarán dinámicamente aquí -->
+                </div>
+                <div class="text-end mt-3">
+                    <h5>Total: $<span id="total-carrito">0</span></h5>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Seguir Comprando</button>
+                <button type="button" class="btn btn-primary">Finalizar Compra</button>
             </div>
         </div>
     </div>

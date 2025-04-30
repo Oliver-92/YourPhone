@@ -19,9 +19,11 @@ body {
 
 /* Hero Section */
 .hero-section {
-    background: url('../img/banner.jpg') no-repeat center center;
+    background: url('../img/banner.webp') no-repeat center center;
+    width: 100%;
     background-size: cover;
-    height: 60vh;
+    min-height: 100vh;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,6 +44,40 @@ body {
 /* Secciones */
 section {
     padding: 80px 0;
+}
+
+/* Fix para el fondo oscuro persistente */
+body.modal-open {
+    overflow: auto;
+    padding-right: 0 !important;
+}
+
+.modal-backdrop.fade.show {
+    display: none;
+}
+
+/* Asegura que los modales se cierren completamente */
+.modal {
+    display: none;
+}
+
+/* Estilos para el carrito */
+#items-carrito .card {
+    transition: all 0.3s ease;
+}
+
+#items-carrito .card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline-secondary {
+    text-align: center;
+    padding: 0.25rem;
+}
+
+/* Estilos para los controles de cantidad */
+.input-group {
+    width: auto;
 }
 
 .footer {

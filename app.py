@@ -176,60 +176,110 @@ def producto(id):
     
     return jsonify(producto_dict)
 
+# Ruta para ver el carrito
+@app.route('/api/carrito', methods=['GET'])
+def api_carrito():
+    carrito = session.get('carrito', [])
+    total = sum(item['precio'] * item['cantidad'] for item in carrito)
+    return jsonify({
+        'carrito': carrito,
+        'total': total
+    })
+
 # Ruta para agregar un producto al carrito
 @app.route('/agregar_al_carrito', methods=['POST'])
 def agregar_al_carrito():
-    if not request.is_json:
-        return jsonify({'error': 'Request must be JSON'}), 400
-    
-    data = request.get_json()
-    id = data.get('id')
-    cantidad = data.get('cantidad', 1)
+    try:
+        data = request.get_json()
+        id = int(data['id'])
+        cantidad = int(data.get('cantidad', 1))
+        
+        # Validación de cantidad
+        if cantidad == 0:
+            return jsonify({'success': False, 'error': 'La cantidad no puede ser cero'}), 400
+            
+        conn = get_db_connection()
+        producto = conn.execute('SELECT * FROM productos WHERE id = ?', (id,)).fetchone()
+        conn.close()
 
-    conn = get_db_connection()
-    producto = conn.execute('SELECT * FROM productos WHERE id = ?', (id,)).fetchone()
-    conn.close()
+        if not producto:
+            return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
 
-    if not producto:
-        return jsonify({'error': 'Producto no encontrado'}), 404
+        if 'carrito' not in session:
+            session['carrito'] = []
 
-    if 'carrito' not in session:
-        session['carrito'] = []
+        producto_dict = dict(producto)
+        item_idx = next((i for i, item in enumerate(session['carrito']) if item['id'] == id), None)
 
-    # Buscar si el producto ya está en el carrito
-    for item in session['carrito']:
-        if item['id'] == id:
-            item['cantidad'] += cantidad
-            session.modified = True
-            return jsonify({'success': True, 'carrito': session['carrito']})
+        if item_idx is not None:
+            # Validar que no quede cantidad negativa
+            nueva_cantidad = session['carrito'][item_idx]['cantidad'] + cantidad
+            if nueva_cantidad <= 0:
+                # Eliminar el producto si la cantidad sería <= 0
+                session['carrito'].pop(item_idx)
+                mensaje = 'Producto eliminado del carrito'
+            else:
+                # Actualizar cantidad
+                session['carrito'][item_idx]['cantidad'] = nueva_cantidad
+                mensaje = 'Cantidad actualizada'
+        else:
+            if cantidad <= 0:
+                return jsonify({'success': False, 'error': 'Cantidad inválida'}), 400
+            session['carrito'].append({
+                'id': id,
+                'marca': producto_dict['marca'],
+                'modelo': producto_dict['modelo'],
+                'precio': float(producto_dict['precio']),
+                'imagen': producto_dict['imagen'],
+                'cantidad': cantidad
+            })
+            mensaje = 'Producto agregado al carrito'
 
-    # Si no existe, agregarlo
-    session['carrito'].append({
-        'id': producto['id'],
-        'marca': producto['marca'],
-        'modelo': producto['modelo'],
-        'precio': float(producto['precio']),
-        'imagen': producto['imagen'],
-        'cantidad': cantidad
-    })
-    session.modified = True
-    
-    return jsonify({'success': True, 'carrito': session['carrito']})
+        session.modified = True
+        return jsonify({
+            'success': True,
+            'carrito': session['carrito'],
+            'message': mensaje
+        })
 
-# Ruta para ver el carrito
-@app.route('/cart', methods=['GET'])
-def cart():
-    carrito = session.get('carrito', [])
-    total = sum(item['precio'] * item['cantidad'] for item in carrito)
-    return render_template('cart.html', carrito=carrito, total=total)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # Ruta para eliminar un producto del carrito
 @app.route('/eliminar_del_carrito/<int:id>', methods=['POST'])
 def eliminar_del_carrito(id):
-    if 'carrito' in session:
-        session['carrito'] = [item for item in session['carrito'] if item['id'] != id]
+    try:
+        if 'carrito' not in session:
+            return jsonify({'success': False, 'error': 'Carrito no existe'}), 404
+
+        data = request.get_json()
+        eliminar_todos = data.get('eliminar_todos', False)
+
+        # Encontrar todos los ítems con ese ID
+        items_a_eliminar = [i for i, item in enumerate(session['carrito']) if item['id'] == id]
+
+        if not items_a_eliminar:
+            return jsonify({'success': False, 'error': 'Producto no encontrado en carrito'}), 404
+
+        if eliminar_todos:
+            # Eliminar todas las ocurrencias
+            session['carrito'] = [item for item in session['carrito'] if item['id'] != id]
+        else:
+            # Eliminar solo una unidad del primer ítem encontrado
+            idx = items_a_eliminar[0]
+            if session['carrito'][idx]['cantidad'] > 1:
+                session['carrito'][idx]['cantidad'] -= 1
+            else:
+                session['carrito'].pop(idx)
+
         session.modified = True
-    return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'carrito': session['carrito']
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # Ruta para la página de contacto
 @app.route('/contacto')

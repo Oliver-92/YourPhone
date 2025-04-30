@@ -26,18 +26,34 @@ window.cargarProducto = function(id) {
             alert('Error al cargar los detalles del producto');
         });
 };
-// Función para agregar al carrito
+
+// Función para abrir el modal del carrito
+window.abrirCarrito = function() {
+    actualizarCarrito();
+    const modal = new bootstrap.Modal(document.getElementById('modalCarrito'));
+    modal.show();
+};
+
+// Función para agregar al carrito 
 window.agregarAlCarrito = function() {
-    const id = document.getElementById('modalProducto').dataset.productoId;
-    const cantidad = parseInt(document.getElementById('cantidadProducto').value) || 1;
+    const id = parseInt(document.getElementById('modalProducto').dataset.productoId);
+    const cantidadInput = document.getElementById('cantidadProducto');
+    let cantidad = parseInt(cantidadInput.value) || 1;
     
+    // Validación en el frontend
+    if (cantidad <= 0) {
+        mostrarNotificacion('La cantidad debe ser al menos 1', 'error');
+        cantidadInput.value = 1;
+        return;
+    }
+
     fetch('/agregar_al_carrito', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            id: parseInt(id),
+            id: id,
             cantidad: cantidad
         })
     })
@@ -46,19 +62,16 @@ window.agregarAlCarrito = function() {
         return response.json();
     })
     .then(data => {
-        if (data.success) {
-            // Cierra el modal ANTES de actualizar el carrito
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProducto'));
-            modal.hide();
-            
-            // Resetear el formulario del modal
-            document.getElementById('cantidadProducto').value = 1;
-            
-            mostrarNotificacion('Producto agregado al carrito');
-            actualizarCarrito();
-        } else {
-            throw new Error(data.error || 'Error al agregar');
-        }
+        if (!data.success) throw new Error(data.error || 'Error al agregar');
+        
+        // Cerrar modales y resetear
+        const modalProducto = bootstrap.Modal.getInstance(document.getElementById('modalProducto'));
+        modalProducto.hide();
+        document.getElementById('cantidadProducto').value = 1;
+        
+        // Mostrar notificación y actualizar carrito
+        mostrarNotificacion(data.message || 'Producto agregado');
+        actualizarCarrito();
     })
     .catch(error => {
         console.error('Error:', error);
@@ -66,36 +79,59 @@ window.agregarAlCarrito = function() {
     });
 };
 
+function validarCantidad(input) {
+    if (input.value < 1) {
+        input.value = 1;
+        mostrarNotificacion('La cantidad mínima es 1', 'warning');
+    }
+}
+
+
 // Función para actualizar el carrito
 function actualizarCarrito() {
-    fetch('/cart')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error al cargar el carrito');
-            }
-            return response.json();
-        })
+    fetch('/api/carrito')
+        .then(response => response.json())
         .then(data => {
             const itemsContainer = document.getElementById('items-carrito');
             itemsContainer.innerHTML = '';
             
             let total = 0;
             data.carrito.forEach(item => {
-                total += item.precio * item.cantidad;
+                // Validación adicional para asegurar cantidades positivas
+                const cantidad = Math.max(1, item.cantidad); // Nunca menor a 1
+                const subtotal = item.precio * cantidad;
+                total += subtotal;
+                
                 itemsContainer.innerHTML += `
-                    <div class="card mb-2">
+                    <div class="card mb-2" data-product-id="${item.id}">
                         <div class="card-body">
-                            <div class="row">
+                            <div class="row align-items-center">
                                 <div class="col-md-2">
-                                    <img src="/static/${item.imagen}" width="50" alt="${item.marca} ${item.modelo}">
+                                    <img src="/static/${item.imagen}" width="50" class="img-thumbnail">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <h6>${item.marca} ${item.modelo}</h6>
-                                    <p>$${item.precio.toFixed(2)} x ${item.cantidad}</p>
+                                    <small class="text-muted">$${item.precio.toFixed(2)} c/u</small>
                                 </div>
-                                <div class="col-md-4 text-end">
-                                    <button class="btn btn-danger btn-sm" onclick="eliminarDelCarrito(${item.id})">
-                                        Eliminar
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center">
+                                        <button class="btn btn-sm btn-outline-secondary" 
+                                                onclick="modificarCantidad(${item.id}, -1)"
+                                                ${item.cantidad <= 1 ? 'disabled' : ''}>
+                                            −
+                                        </button>
+                                        <span class="mx-2 cantidad-input">${cantidad}</span>
+                                        <button class="btn btn-sm btn-outline-secondary" 
+                                                onclick="modificarCantidad(${item.id}, 1)">
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <p class="mb-1">$${subtotal.toFixed(2)}</p>
+                                    <button class="btn btn-sm btn-danger" 
+                                            onclick="eliminarDelCarrito(${item.id}, true)">
+                                        Eliminar<i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -104,40 +140,71 @@ function actualizarCarrito() {
                 `;
             });
             
-            document.getElementById('total-carrito').textContent = total.toFixed(2);
-            document.getElementById('contador-carrito').textContent = data.carrito.length;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarNotificacion('Error al cargar el carrito', 'error');
+            // Asegurar total no negativo
+            document.getElementById('total-carrito').textContent = Math.max(0, total).toFixed(2);
+            const totalItems = data.carrito.reduce((sum, item) => sum + Math.max(1, item.cantidad), 0);
+            document.getElementById('contador-carrito').textContent = Math.max(0, totalItems);
         });
 }
 
-// Función para eliminar del carrito
-window.eliminarDelCarrito = function(id) {
-    fetch(`/eliminar_del_carrito/${id}`, {
+// Nueva función para modificar cantidades
+window.modificarCantidad = function(id, delta) {
+    const cantidadInput = document.querySelector(`.card[data-product-id="${id}"] .cantidad-input`);
+    const cantidadActual = parseInt(cantidadInput.textContent);
+    
+    // Validación en el frontend
+    if (cantidadActual + delta <= 0) {
+        if (confirm('¿Eliminar este producto del carrito?')) {
+            eliminarDelCarrito(id, true);
+        }
+        return;
+    }
+
+    fetch('/agregar_al_carrito', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({ 
+            id: id,
+            cantidad: delta
+        })
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error('Error al eliminar del carrito');
-        }
+        if (!response.ok) throw new Error('Error en la respuesta');
         return response.json();
     })
     .then(data => {
-        if (data.success) {
-            actualizarCarrito();
-            mostrarNotificacion('Producto eliminado del carrito');
-        } else {
-            throw new Error('Error al eliminar del carrito');
-        }
+        if (!data.success) throw new Error(data.error || 'Error al modificar');
+        actualizarCarrito();
     })
     .catch(error => {
         console.error('Error:', error);
         mostrarNotificacion(error.message, 'error');
+    });
+};
+
+// Función para eliminar del carrito
+window.eliminarDelCarrito = function(id, eliminarTodos = false) {
+    fetch(`/eliminar_del_carrito/${id}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            eliminar_todos: eliminarTodos
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        actualizarCarrito();
+        mostrarNotificacion(eliminarTodos ? 
+            'Producto eliminado' : 
+            'Una unidad eliminada');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al eliminar', 'error');
     });
 };
 
